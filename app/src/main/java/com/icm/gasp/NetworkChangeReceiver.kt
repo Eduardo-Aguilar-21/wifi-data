@@ -13,12 +13,15 @@ import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 import android.os.Build
 import android.os.Build.VERSION.SDK_INT
+import java.io.BufferedReader
+import java.io.InputStreamReader
 
 class NetworkChangeReceiver(
     private val connectionTextView: TextView,
     private val ipTextView: TextView,
     private val publicIpTextView: TextView,
-    private val routerIpTextView: TextView
+    private val routerIpTextView: TextView,
+    private val devicesIpTextView: TextView
 ) : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -38,6 +41,12 @@ class NetworkChangeReceiver(
         ipTextView.text = if (isCellular) "IP Móvil: ${getLocalIpAddress()}" else "IP Local: ${getLocalIpAddress()}"
         FetchPublicIpTask(publicIpTextView).execute()
         routerIpTextView.text = "IP Router: ${getRouterIpAddress(context)}"
+
+        if (isWifi) {
+            FetchDevicesIpTask(devicesIpTextView, context).execute()
+        } else {
+            devicesIpTextView.text = "Escaneo de dispositivos disponible solo en Wi-Fi"
+        }
     }
 
     private fun getLocalIpAddress(): String {
@@ -90,6 +99,51 @@ class NetworkChangeReceiver(
 
         override fun onPostExecute(result: String) {
             textView.text = "IP Pública: $result"
+        }
+    }
+
+
+    private class FetchDevicesIpTask(
+        private val textView: TextView,
+        private val context: Context
+    ) : AsyncTask<Void, Void, String>() {
+
+        override fun doInBackground(vararg params: Void?): String {
+            val sb = StringBuilder()
+            val localIp = getLocalIpAddress()
+            val baseIp = localIp.substringBeforeLast(".") + "."
+
+            for (i in 1..254) {
+                val ip = baseIp + i
+                val process = Runtime.getRuntime().exec("ping -c 1 $ip")
+                val reader = BufferedReader(InputStreamReader(process.inputStream))
+                val result = reader.readText()
+                if (result.contains("1 packets transmitted, 1 received")) {
+                    sb.append(ip).append("\n")
+                }
+            }
+            return sb.toString()
+        }
+
+        override fun onPostExecute(result: String) {
+            textView.text = "Dispositivos conectados:\n$result"
+        }
+
+        private fun getLocalIpAddress(): String {
+            try {
+                val interfaces = NetworkInterface.getNetworkInterfaces()
+                for (networkInterface in interfaces) {
+                    val addresses = networkInterface.inetAddresses
+                    for (address in addresses) {
+                        if (!address.isLoopbackAddress && address.isSiteLocalAddress) {
+                            return address.hostAddress
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            return "IP no disponible"
         }
     }
 }
