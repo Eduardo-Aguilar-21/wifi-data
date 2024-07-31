@@ -10,10 +10,13 @@ import android.os.Bundle
 import android.widget.TextView
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Handler
+import android.os.Looper
 
 class Test_Red : AppCompatActivity() {
 
     private lateinit var networkChangeReceiver: NetworkChangeReceiver
+    private lateinit var handler: Handler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -25,7 +28,8 @@ class Test_Red : AppCompatActivity() {
         val ipRouterTextView: TextView = findViewById(R.id.ipRouter)
         val devicesIpTextView: TextView = findViewById(R.id.devicesIp)
 
-        networkChangeReceiver = NetworkChangeReceiver(isConnectedTextView, ipLocal, ipPublicTextView, ipRouterTextView, devicesIpTextView)
+        handler = Handler(Looper.getMainLooper())
+        networkChangeReceiver = NetworkChangeReceiver(isConnectedTextView, ipLocal, ipPublicTextView, ipRouterTextView, devicesIpTextView, handler)
 
         val intentFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         registerReceiver(networkChangeReceiver, intentFilter)

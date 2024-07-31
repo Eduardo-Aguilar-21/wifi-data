@@ -7,6 +7,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.AsyncTask
+import android.os.Handler
 import android.util.Log
 import android.widget.TextView
 import java.io.BufferedReader
@@ -20,7 +21,8 @@ class NetworkChangeReceiver(
     private val ipTextView: TextView,
     private val publicIpTextView: TextView,
     private val routerIpTextView: TextView,
-    private val devicesIpTextView: TextView
+    private val devicesIpTextView: TextView,
+    private val handler: Handler
 ) : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -42,7 +44,7 @@ class NetworkChangeReceiver(
         routerIpTextView.text = "IP Router: ${getRouterIpAddress(context)}"
 
         if (isWifi) {
-            FetchDevicesIpTask(devicesIpTextView, context).execute()
+            FetchDevicesIpTask(devicesIpTextView, handler, context).execute()
         } else {
             devicesIpTextView.text = "Escaneo de dispositivos disponible solo en Wi-Fi"
         }
@@ -102,30 +104,43 @@ class NetworkChangeReceiver(
 
     private class FetchDevicesIpTask(
         private val textView: TextView,
+        private val handler: Handler,
         private val context: Context
-    ) : AsyncTask<Void, Void, String>() {
+    ) : AsyncTask<Void, String, String>() {
 
         override fun doInBackground(vararg params: Void?): String {
             val sb = StringBuilder()
             val localIp = getLocalIpAddress()
             val baseIp = localIp.substringBeforeLast(".") + "."
 
-            for (i in 1..254) {
-                val ip = baseIp + i
-                val process = Runtime.getRuntime().exec("ping -c 1 $ip")
-                val reader = BufferedReader(InputStreamReader(process.inputStream))
-                val result = reader.readText()
-                Log.d("Dat", "Dat: $result")
-                if (result.contains("1 packets transmitted, 1 received")) {
-                    sb.append(ip).append("\n")
-                    Log.d("NetworkScan", "Active IP: $ip")
+            val ranges = listOf(100..150, 230..238)
+
+            for (range in ranges) {
+                for (i in range) {
+                    val ip = baseIp + i
+                    val process = Runtime.getRuntime().exec("ping -c 1 $ip")
+                    val reader = BufferedReader(InputStreamReader(process.inputStream))
+                    val result = reader.readText()
+                    if (result.contains("1 packets transmitted, 1 received")) {
+                        sb.append(ip).append("\n")
+                        publishProgress(ip)
+                    }
                 }
             }
             return sb.toString()
         }
 
+        override fun onProgressUpdate(vararg values: String) {
+            val ip = values[0]
+            handler.post {
+                textView.append("$ip\n")
+            }
+        }
+
         override fun onPostExecute(result: String) {
-            textView.text = "Dispositivos conectados:\n$result"
+            handler.post {
+                textView.text = "Dispositivos conectados:\n$result"
+            }
         }
 
         private fun getLocalIpAddress(): String {
