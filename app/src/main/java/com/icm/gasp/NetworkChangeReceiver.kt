@@ -1,4 +1,4 @@
-package com.icm.gasp
+// NetworkChangeReceiver.kt
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -7,14 +7,13 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.AsyncTask
+import android.util.Log
 import android.widget.TextView
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.net.NetworkInterface
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
-import android.os.Build
-import android.os.Build.VERSION.SDK_INT
-import java.io.BufferedReader
-import java.io.InputStreamReader
 
 class NetworkChangeReceiver(
     private val connectionTextView: TextView,
@@ -84,7 +83,6 @@ class NetworkChangeReceiver(
         }
     }
 
-
     private class FetchPublicIpTask(private val textView: TextView) : AsyncTask<Void, Void, String>() {
         override fun doInBackground(vararg params: Void?): String {
             return try {
@@ -102,7 +100,6 @@ class NetworkChangeReceiver(
         }
     }
 
-
     private class FetchDevicesIpTask(
         private val textView: TextView,
         private val context: Context
@@ -118,8 +115,10 @@ class NetworkChangeReceiver(
                 val process = Runtime.getRuntime().exec("ping -c 1 $ip")
                 val reader = BufferedReader(InputStreamReader(process.inputStream))
                 val result = reader.readText()
+                Log.d("Dat", "Dat: $result")
                 if (result.contains("1 packets transmitted, 1 received")) {
                     sb.append(ip).append("\n")
+                    Log.d("NetworkScan", "Active IP: $ip")
                 }
             }
             return sb.toString()
