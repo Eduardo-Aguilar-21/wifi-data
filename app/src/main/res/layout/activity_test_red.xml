@@ -51,12 +51,23 @@
         android:textSize="24dp"
         android:text="..." />
 
+    <TextView
+        android:id="@+id/ipRouter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/white"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ipPublica"
+        android:textSize="24dp"
+        android:text="..." />
+
     <View
         android:id="@+id/divider"
         android:layout_width="0dp"
         android:layout_height="1dp"
         android:background="@android:color/darker_gray"
-        app:layout_constraintTop_toBottomOf="@id/ipPublica"
+        app:layout_constraintTop_toBottomOf="@id/ipRouter"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

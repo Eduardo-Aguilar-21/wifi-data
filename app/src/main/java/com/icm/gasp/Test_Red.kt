@@ -21,8 +21,9 @@ class Test_Red : AppCompatActivity() {
         val isConnectedTextView: TextView = findViewById(R.id.isConected)
         val ipLocal: TextView = findViewById(R.id.ipLocal)
         val ipPublicTextView: TextView = findViewById(R.id.ipPublica)
+        val ipRouterTextView: TextView = findViewById(R.id.ipRouter)
 
-        networkChangeReceiver = NetworkChangeReceiver(isConnectedTextView, ipLocal, ipPublicTextView)
+        networkChangeReceiver = NetworkChangeReceiver(isConnectedTextView, ipLocal, ipPublicTextView, ipRouterTextView)
 
         val intentFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         registerReceiver(networkChangeReceiver, intentFilter)

@@ -5,16 +5,20 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.wifi.WifiManager
 import android.os.AsyncTask
 import android.widget.TextView
 import java.net.NetworkInterface
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
+import android.os.Build
+import android.os.Build.VERSION.SDK_INT
 
 class NetworkChangeReceiver(
     private val connectionTextView: TextView,
     private val ipTextView: TextView,
-    private val publicIpTextView: TextView
+    private val publicIpTextView: TextView,
+    private val routerIpTextView: TextView
 ) : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -33,6 +37,7 @@ class NetworkChangeReceiver(
 
         ipTextView.text = if (isCellular) "IP Móvil: ${getLocalIpAddress()}" else "IP Local: ${getLocalIpAddress()}"
         FetchPublicIpTask(publicIpTextView).execute()
+        routerIpTextView.text = "IP Router: ${getRouterIpAddress(context)}"
     }
 
     private fun getLocalIpAddress(): String {
@@ -51,6 +56,25 @@ class NetworkChangeReceiver(
         }
         return "IP no disponible"
     }
+
+    private fun getRouterIpAddress(context: Context): String {
+        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val dhcpInfo = wifiManager.dhcpInfo
+
+        return if (dhcpInfo.gateway != 0) {
+            val ipAddress = dhcpInfo.gateway
+            String.format(
+                "%d.%d.%d.%d",
+                (ipAddress and 0xFF).toInt(),
+                (ipAddress shr 8 and 0xFF).toInt(),
+                (ipAddress shr 16 and 0xFF).toInt(),
+                (ipAddress shr 24 and 0xFF).toInt()
+            )
+        } else {
+            "IP no disponible"
+        }
+    }
+
 
     private class FetchPublicIpTask(private val textView: TextView) : AsyncTask<Void, Void, String>() {
         override fun doInBackground(vararg params: Void?): String {
