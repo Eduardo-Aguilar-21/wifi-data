@@ -45,4 +45,10 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     implementation("org.jmdns:jmdns:3.5.7")
+    /* UPnP */
+    /*
+    implementation("org.fourthline.cling:cling-core:2.1.0")
+    implementation("org.fourthline.cling:cling-support:2.1.0")
+     */
+
 }

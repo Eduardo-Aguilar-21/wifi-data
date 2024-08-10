@@ -1,0 +1,10 @@
+[
+  {
+    "mac_address": "00:1A:2B:3C:4D:5E",
+    "name": "Dispositivo1"
+  },
+  {
+    "mac_address": "01:2B:3C:4D:5E:6F",
+    "name": "Dispositivo2"
+  }
+]

@@ -1,5 +1,3 @@
-// NetworkChangeReceiver.kt
-
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,8 +6,9 @@ import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.AsyncTask
 import android.os.Handler
-import android.util.Log
 import android.widget.TextView
+import com.icm.gasp.IdentificationScreen
+import com.icm.gasp.utils.PreferencesManager
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.NetworkInterface
@@ -24,6 +23,10 @@ class NetworkChangeReceiver(
     private val devicesIpTextView: TextView,
     private val handler: Handler
 ) : BroadcastReceiver() {
+
+    companion object {
+        var isScanningCompleted: Boolean = false
+    }
 
     override fun onReceive(context: Context, intent: Intent) {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -43,7 +46,7 @@ class NetworkChangeReceiver(
         FetchPublicIpTask(publicIpTextView).execute()
         routerIpTextView.text = "IP Router: ${getRouterIpAddress(context)}"
 
-        if (isWifi) {
+        if (isWifi && !isScanningCompleted) {
             FetchDevicesIpTask(devicesIpTextView, handler, context).execute()
         } else {
             devicesIpTextView.text = "Escaneo de dispositivos disponible solo en Wi-Fi"
@@ -106,14 +109,15 @@ class NetworkChangeReceiver(
         private val textView: TextView,
         private val handler: Handler,
         private val context: Context
-    ) : AsyncTask<Void, String, String>() {
+    ) : AsyncTask<Void, String, List<String>>() {
 
-        override fun doInBackground(vararg params: Void?): String {
-            val sb = StringBuilder()
+        override fun doInBackground(vararg params: Void?): List<String> {
+            val ipList = mutableListOf<String>()
             val localIp = getLocalIpAddress()
             val baseIp = localIp.substringBeforeLast(".") + "."
 
-            val ranges = listOf(100..150, 230..238)
+            // val ranges = listOf(100..150, 230..238)
+            val ranges = listOf(139..142)
 
             for (range in ranges) {
                 for (i in range) {
@@ -122,12 +126,12 @@ class NetworkChangeReceiver(
                     val reader = BufferedReader(InputStreamReader(process.inputStream))
                     val result = reader.readText()
                     if (result.contains("1 packets transmitted, 1 received")) {
-                        sb.append(ip).append("\n")
+                        ipList.add(ip)
                         publishProgress(ip)
                     }
                 }
             }
-            return sb.toString()
+            return ipList
         }
 
         override fun onProgressUpdate(vararg values: String) {
@@ -137,9 +141,20 @@ class NetworkChangeReceiver(
             }
         }
 
-        override fun onPostExecute(result: String) {
+        override fun onPostExecute(result: List<String>) {
             handler.post {
-                textView.text = "Dispositivos conectados:\n$result"
+                // Marca el escaneo como completado
+                NetworkChangeReceiver.isScanningCompleted = true
+
+                // Guarda la lista de IPs en SharedPreferences
+                PreferencesManager.saveIpList(context, result)
+
+                // Muestra las IPs en el TextView
+                textView.text = "Dispositivos conectados:\n${result.joinToString("\n")}"
+
+                // Redirige a IdentificationScreen
+                val intent = Intent(context, IdentificationScreen::class.java)
+                context.startActivity(intent)
             }
         }
 
